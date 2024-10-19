@@ -13,5 +13,7 @@ add_executable(lftc
     .idea/modules.xml
     .idea/vcs.xml
     .idea/workspace.xml
-        analyzer.cpp
+        main.cpp
+        bst/BST.h
+        bst/BST.cpp
 )

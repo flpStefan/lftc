@@ -49,12 +49,19 @@ cmake_ninja_workdir = D$:/Facultate/lftc/cmake-build-debug/
 
 build cmake_object_order_depends_target_lftc: phony || .
 
-build CMakeFiles/lftc.dir/analyzer.cpp.obj: CXX_COMPILER__lftc_unscanned_Debug D$:/Facultate/lftc/analyzer.cpp || cmake_object_order_depends_target_lftc
-  DEP_FILE = CMakeFiles\lftc.dir\analyzer.cpp.obj.d
+build CMakeFiles/lftc.dir/main.cpp.obj: CXX_COMPILER__lftc_unscanned_Debug D$:/Facultate/lftc/main.cpp || cmake_object_order_depends_target_lftc
+  DEP_FILE = CMakeFiles\lftc.dir\main.cpp.obj.d
   FLAGS = -g -std=gnu++14 -fdiagnostics-color=always
   INCLUDES = -ID:/Facultate/lftc/.
   OBJECT_DIR = CMakeFiles\lftc.dir
   OBJECT_FILE_DIR = CMakeFiles\lftc.dir
+
+build CMakeFiles/lftc.dir/bst/BST.cpp.obj: CXX_COMPILER__lftc_unscanned_Debug D$:/Facultate/lftc/bst/BST.cpp || cmake_object_order_depends_target_lftc
+  DEP_FILE = CMakeFiles\lftc.dir\bst\BST.cpp.obj.d
+  FLAGS = -g -std=gnu++14 -fdiagnostics-color=always
+  INCLUDES = -ID:/Facultate/lftc/.
+  OBJECT_DIR = CMakeFiles\lftc.dir
+  OBJECT_FILE_DIR = CMakeFiles\lftc.dir\bst
 
 
 # =============================================================================
@@ -64,7 +71,7 @@ build CMakeFiles/lftc.dir/analyzer.cpp.obj: CXX_COMPILER__lftc_unscanned_Debug D
 #############################################
 # Link the executable lftc.exe
 
-build lftc.exe: CXX_EXECUTABLE_LINKER__lftc_Debug CMakeFiles/lftc.dir/analyzer.cpp.obj
+build lftc.exe: CXX_EXECUTABLE_LINKER__lftc_Debug CMakeFiles/lftc.dir/main.cpp.obj CMakeFiles/lftc.dir/bst/BST.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\lftc.dir

@@ -1,4 +1,0 @@
-main() {
-    string a = "hello";
-    write(a);
-}

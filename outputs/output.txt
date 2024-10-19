@@ -1,0 +1,2 @@
+List of parsed atoms: 
+['main()', '{', 'string', 'a', '<-', '"hello"', ';', 'int', 'b', '<-', '2', ';', 'int', 'c', '<-', '0', ';', 'if(', 'b', '>', 'c', ')', '{', 'write(b)', ';', '}', 'else', '{', 'write(c)', ';', '}', 'write(a)', ';', '}', 
