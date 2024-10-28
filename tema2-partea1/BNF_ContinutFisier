@@ -1,9 +1,0 @@
-<input_file> ::= <states><alphabet><transitions><start_state><final_states>
-<states> ::= <state> | <state>, <states>
-<state> ::= ID
-<alphabet> ::= <symbol> | { <symbol> }, <alphabet>    // { } o data sau de mai multe ori
-<symbol> ::= a | b | c | d | e | f | x | A | B | C| D | E | F | X | 0 | 1 | 2 | .. | 9
-<transitions> ::= <transition> | <transition> <transitions>
-<transition> ::= <state> <symbol> <state>
-<start_state> ::= <state>
-<final_states> ::= <state> | <state> <final_states>
