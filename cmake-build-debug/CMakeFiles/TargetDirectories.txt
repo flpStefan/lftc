@@ -1,3 +1,0 @@
-D:/Facultate/lftc/cmake-build-debug/CMakeFiles/lftc.dir
-D:/Facultate/lftc/cmake-build-debug/CMakeFiles/edit_cache.dir
-D:/Facultate/lftc/cmake-build-debug/CMakeFiles/rebuild_cache.dir

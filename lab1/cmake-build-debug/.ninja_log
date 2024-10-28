@@ -1,0 +1,5 @@
+# ninja log v6
+5	783	7510484262401863	CMakeFiles/lftc.dir/main.cpp.obj	d30d2f37f1da4645
+2	341	7517490512647265	build.ninja	a02d2416b3c9d5d3
+784	988	7510484270183394	lftc.exe	1bb412b6c09a5926
+23	477	7510454966584188	CMakeFiles/lftc.dir/bst/BST.cpp.obj	6a56be5f41bd1bf5

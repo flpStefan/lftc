@@ -1,0 +1,9 @@
+<input_file> ::= <start_state> '\n' <final_states> '\n' <transitions>
+<start_state> ::= <state>
+<final_state> ::= <state> | <state> <final_states>
+<state> ::= ID
+<transitions> ::= <transition> | <transition> <transitions>
+<transition> ::= <state> <state> <symbols>
+ID ::= <symbols>
+<symbols> = <symbol> | <symbol> <symbols>
+<symbol> ::= a | b | c | ... | z | A | B | ... | Z | 0 | 1 | 2 | ... | 9

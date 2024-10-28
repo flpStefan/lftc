@@ -1,0 +1,3 @@
+D:/Facultate/lftc/tema2-partea1/cmake-build-debug/CMakeFiles/tema2_partea1.dir
+D:/Facultate/lftc/tema2-partea1/cmake-build-debug/CMakeFiles/edit_cache.dir
+D:/Facultate/lftc/tema2-partea1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
