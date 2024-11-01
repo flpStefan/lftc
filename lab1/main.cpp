@@ -9,13 +9,13 @@ using namespace std;
 
 #pragma region File Definition
 //INPUTS
-ifstream input_file("inputs/input.txt");
-ifstream input_keywords("inputs/reserved_keywords");
+ifstream input_file("D:\\Facultate\\lftc\\lftc\\lab1\\inputs\\input.txt");
+ifstream input_keywords("D:\\Facultate\\lftc\\lftc\\lab1\\inputs\\reserved_keywords");
 
 //OUTPUTS
-ofstream output_file("outputs/output.txt");
-ofstream output_ts("outputs/output_ts.txt");
-ofstream output_fip("outputs/output_fip.txt");
+ofstream output_file("D:\\Facultate\\lftc\\lftc\\lab1\\outputs\\output.txt");
+ofstream output_ts("D:\\Facultate\\lftc\\lftc\\lab1\\outputs\\output_ts.txt");
+ofstream output_fip("D:\\Facultate\\lftc\\lftc\\lab1\\outputs\\output_fip.txt");
 #pragma endregion
 
 #pragma region Variable declaration
@@ -23,10 +23,11 @@ vector<string> code_lines;
 vector<string> parsed_code;
 string errors = "";
 map<string, int> key_words;
-vector<pair<int,int>> fip;
+vector<pair<int, int> > fip;
 BinarySearchTree ts;
 #pragma endregion
 
+/// INPUT | OUTPUT
 void read_input_lines() {
     if (!input_file)
         throw runtime_error("Error - Couldn't open the file!");
@@ -71,17 +72,113 @@ void output() {
 
     ts.inorder_output(ts.root, output_ts);
 
-    for(auto element : fip) {
-        if(element.second == -1) output_fip << element.first << " : " << "-" << "\n";
+    for (auto element: fip) {
+        if (element.second == -1) output_fip << element.first << " : " << "-" << "\n";
         else output_fip << element.first << " : " << element.second << "\n";
     }
 
-    if(!errors.empty()) cout<<errors << '\n';
+    if (!errors.empty()) cout << errors << '\n';
 
     output_file.close();
     output_ts.close();
 }
 
+
+/// CODE PROCESSING
+bool is_alphanum(const char &c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+}
+
+vector<string> parse_sequence(const string &sequence) {
+    vector<string> tokens;
+
+    for (int i = 0; i < sequence.size(); i++) {
+        //form the word without any special characters
+        string current_word;
+        while (i < sequence.size()) {
+            if (is_alphanum(sequence[i]) || sequence[i] == '_') {
+                current_word += sequence[i];
+            } else break;
+            i++;
+        }
+
+        if (!current_word.empty()) tokens.push_back(current_word);
+
+        //checking specific character structures
+        if (sequence[i] == '<') {
+            if (i + 1 < sequence.size()) {
+                if (sequence[i + 1] == '-') {
+                    tokens.push_back("<-");
+                    i++;
+                } else if (sequence[i + 1] == '=') {
+                    tokens.push_back("<=");
+                    i++;
+                } else tokens.push_back("<");
+            } else tokens.push_back("<");
+        } else if (sequence[i] == '>') {
+            if (i + 1 < sequence.size()) {
+                if (sequence[i + 1] == '=') {
+                    tokens.push_back(">=");
+                    i++;
+                } else tokens.push_back(">");
+            } else tokens.push_back(">");
+        } else if (sequence[i] == '=') {
+            if (i + 1 < sequence.size()) {
+                if (sequence[i + 1] == '=') {
+                    tokens.push_back("==");
+                    i++;
+                } else tokens.push_back("=");
+            } else tokens.push_back("=");
+        } else if (sequence[i] == '!') {
+            if (i + 1 < sequence.size()) {
+                if (sequence[i + 1] == '=') {
+                    tokens.push_back("!=");
+                    i++;
+                } else tokens.push_back("!");
+            } else tokens.push_back("!");
+        } else if(i < sequence.size() && !is_alphanum(sequence[i])) {
+            string character;
+            character += sequence[i];
+            tokens.push_back(character);
+        }
+    }
+
+    return tokens;
+}
+
+void parse_code() {
+    int line_number = 0;
+    for (string line: code_lines) {
+        line_number++;
+
+        if (!line.empty()) {
+            istringstream stream(line);
+            string sequence;
+
+            while (stream >> sequence) {
+                vector<string> tokens = parse_sequence(sequence);
+
+                //TODO add errors
+                for (const string &token: tokens)
+                    if(!token.empty()) {
+                        parsed_code.push_back(token);
+                        if (key_words.count(token) != 0) {
+                            fip.push_back(make_pair(key_words[token], -1));
+                        } else {
+                            if (ts.get_index(token) == -1) ts.insert(token);
+                            fip.push_back(make_pair(0, ts.get_index(token)));
+                        }
+                    }
+
+            }
+        }
+    }
+
+    /// end
+}
+
+
+///OLD METHOD
 void parse_code_file() {
     for (string line: code_lines) {
         if (!line.empty()) {
@@ -116,44 +213,47 @@ void parse_code_file() {
 
 void create_ts() {
     for (int i = 0; i < parsed_code.size(); i++) {
-        if (parsed_code[i] == "int" || parsed_code[i] == "float" || parsed_code[i] == "string" || parsed_code[i] == "<-") {
+        if (parsed_code[i] == "int" || parsed_code[i] == "float" || parsed_code[i] == "string" || parsed_code[i] ==
+            "<-") {
             if (i + 1 < parsed_code.size()) {
                 i++;
                 if (key_words.count(parsed_code[i]) == 0 && ts.get_index(parsed_code[i]) == -1)
                     ts.insert(parsed_code[i]);
                 else errors += "Error - '" + parsed_code[i] + "' is not a valid variable/const\n";
-            }
-            else break;
+            } else break;
         }
     }
 }
 
 void create_fip() {
-    if(parsed_code[0] != "main()") errors += "Error - Program does not start with 'main()'\n";
-    if(parsed_code[1] != "{") errors += "Error - Missing '{' after 'main()'\n";
-    if(parsed_code[parsed_code.size() - 1] != "}") errors += "Error - Missing '}' at the end of the file\n";
+    if (parsed_code[0] != "main()") errors += "Error - Program does not start with 'main()'\n";
+    if (parsed_code[1] != "{") errors += "Error - Missing '{' after 'main()'\n";
+    if (parsed_code[parsed_code.size() - 1] != "}") errors += "Error - Missing '}' at the end of the file\n";
 
-    for(int i = 0; i < parsed_code.size(); i++) {
-        if(parsed_code[i] != "{" && parsed_code[i] != "}" && parsed_code[i] != "{" && parsed_code[i] != ")") {
-            if(parsed_code[i] == "if") {
+    for (int i = 0; i < parsed_code.size(); i++) {
+        if (parsed_code[i] != "{" && parsed_code[i] != "}" && parsed_code[i] != "{" && parsed_code[i] != ")") {
+            if (parsed_code[i] == "if") {
                 fip.push_back(make_pair(key_words[parsed_code[i]], -1));
-                if(parsed_code[i + 1] != "(") errors += "Error - Missing '(' after 'if'\n";
+                if (parsed_code[i + 1] != "(") errors += "Error - Missing '(' after 'if'\n";
                 else i++;
             }
-            if(parsed_code[i] == "while") {
+            if (parsed_code[i] == "while") {
                 fip.push_back(make_pair(key_words[parsed_code[i]], -1));
-                if(parsed_code[i + 1] != "(") errors += "Error - Missing '(' after 'while'\n";
+                if (parsed_code[i + 1] != "(") errors += "Error - Missing '(' after 'while'\n";
                 else i++;
             }
-            if(ts.get_index(parsed_code[i]) != -1) {
-                if(parsed_code[i - 1] == "<-") fip.push_back(make_pair(key_words["CONST"], ts.get_index(parsed_code[i])));
+            if (ts.get_index(parsed_code[i]) != -1) {
+                if (parsed_code[i - 1] == "<-")
+                    fip.push_back(
+                        make_pair(key_words["CONST"], ts.get_index(parsed_code[i])));
                 else fip.push_back(make_pair(key_words["ID"], ts.get_index(parsed_code[i])));
-            }
-            else fip.push_back(make_pair(key_words[parsed_code[i]], -1));
+            } else fip.push_back(make_pair(key_words[parsed_code[i]], -1));
         }
     }
 }
 
+
+/// MAIN
 int main() {
     //Cod BB
     try {
@@ -165,9 +265,10 @@ int main() {
         return 1;
     }
 
-    parse_code_file();
-    create_ts();
-    create_fip();
+    // parse_code_file();
+    // create_ts();
+    // create_fip();
+    parse_code();
 
     output();
     return 0;

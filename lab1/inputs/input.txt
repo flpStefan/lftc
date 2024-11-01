@@ -1,12 +1,13 @@
-main() {
+main(){
     string a <- "hello";
-    int b <- 2;
-    int c <- 0;
-    if ( b > c ) {
+    int b <- 0;
+    int c <- 1;
+
+    if(b>c){
         write(b);
     }
-    else {
-        write(c);
+    else{
+        write(a);
     }
-    write(a);
+
 }
