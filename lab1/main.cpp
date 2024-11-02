@@ -4,18 +4,28 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include <AF/AutomatFinit.h>
+
 #include "bst/BST.h"
 using namespace std;
 
 #pragma region File Definition
 //INPUTS
-ifstream input_file("D:\\Facultate\\lftc\\lftc\\lab1\\inputs\\input.txt");
-ifstream input_keywords("D:\\Facultate\\lftc\\lftc\\lab1\\inputs\\reserved_keywords");
+string input_filename = R"(D:\Facultate\lftc\lftc\lab1\inputs\input.txt)";
+string keywords_filename = R"(D:\Facultate\lftc\lftc\lab1\inputs\reserved_keywords.txt)";
+string identifiers_filename = R"(D:\Facultate\lftc\lftc\lab1\inputs\af_identifiers.txt)";
+string integers_filename = R"(D:\Facultate\lftc\lftc\lab1\inputs\af_integers.txt)";
+string float_filename = R"(D:\Facultate\lftc\lftc\lab1\inputs\af_float.txt)";
+ifstream input_file(input_filename);
+ifstream input_keywords(keywords_filename);
 
 //OUTPUTS
-ofstream output_file("D:\\Facultate\\lftc\\lftc\\lab1\\outputs\\output.txt");
-ofstream output_ts("D:\\Facultate\\lftc\\lftc\\lab1\\outputs\\output_ts.txt");
-ofstream output_fip("D:\\Facultate\\lftc\\lftc\\lab1\\outputs\\output_fip.txt");
+string output_filename = R"(D:\Facultate\lftc\lftc\lab1\outputs\output.txt)";
+string output_ts_filename = R"(D:\Facultate\lftc\lftc\lab1\outputs\output_ts.txt)";
+string output_fip_filename = R"(D:\Facultate\lftc\lftc\lab1\outputs\output_fip.txt)";
+ofstream output_file(output_filename);
+ofstream output_ts(output_ts_filename);
+ofstream output_fip(output_fip_filename);
 #pragma endregion
 
 #pragma region Variable declaration
@@ -24,7 +34,11 @@ vector<string> parsed_code;
 string errors = "";
 map<string, int> key_words;
 vector<pair<int, int> > fip;
-BinarySearchTree ts;
+BinarySearchTree ts_constants;
+BinarySearchTree ts_identifiers;
+AutomatFinit identifiers;
+AutomatFinit integer_constants;
+AutomatFinit float_constants;
 #pragma endregion
 
 /// INPUT | OUTPUT
@@ -70,7 +84,10 @@ void output() {
         output_file << "'" << atom << "'" << ", ";
     }
 
-    ts.inorder_output(ts.root, output_ts);
+    output_ts << "Constants: \n";
+    ts_constants.inorder_output(ts_constants.root, output_ts);
+    output_ts << "Variables: \n";
+    ts_constants.inorder_output(ts_constants.root, output_ts);
 
     for (auto element: fip) {
         if (element.second == -1) output_fip << element.first << " : " << "-" << "\n";
@@ -81,6 +98,7 @@ void output() {
 
     output_file.close();
     output_ts.close();
+    output_fip.close();
 }
 
 
@@ -136,7 +154,7 @@ vector<string> parse_sequence(const string &sequence) {
                     i++;
                 } else tokens.push_back("!");
             } else tokens.push_back("!");
-        } else if(i < sequence.size() && !is_alphanum(sequence[i])) {
+        } else if (i < sequence.size() && !is_alphanum(sequence[i])) {
             string character;
             character += sequence[i];
             tokens.push_back(character);
@@ -148,6 +166,9 @@ vector<string> parse_sequence(const string &sequence) {
 
 void parse_code() {
     int line_number = 0;
+    int opened_brace = 0;
+    int opened_paranthesis = 0;
+    bool must_close_string = false;
     for (string line: code_lines) {
         line_number++;
 
@@ -158,118 +179,105 @@ void parse_code() {
             while (stream >> sequence) {
                 vector<string> tokens = parse_sequence(sequence);
 
-                //TODO add errors
-                for (const string &token: tokens)
-                    if(!token.empty()) {
+                for (const string &token: tokens) {
+                    //paranthesis check
+                    if (token == "(") opened_paranthesis++;
+                    if (token == ")") opened_paranthesis--;
+                    if (token == "{") opened_brace++;
+                    if (token == "}") opened_brace--;
+
+                    if (!token.empty()) {
                         parsed_code.push_back(token);
+
+                        //if token is a reserved word
                         if (key_words.count(token) != 0) {
+                            if(token == "\"" && must_close_string) must_close_string = false;
+
                             fip.push_back(make_pair(key_words[token], -1));
-                        } else {
-                            if (ts.get_index(token) == -1) ts.insert(token);
-                            fip.push_back(make_pair(0, ts.get_index(token)));
+                        }
+                        //if token is a constant/identifier
+                        else {
+                            if (ts_constants.get_index(token) == -1 && ts_identifiers.get_index(token) == -1) {
+                                //checking if there is anything before
+                                if (fip.size() > 0) {
+                                    //if it is a variable it has to be declared
+                                    int previous_code = fip[fip.size() - 1].first;
+                                    if (previous_code == key_words["string"] || previous_code == key_words["int"] ||
+                                        previous_code == key_words["float"]) {
+                                        //we check the if the identifier is valid
+                                        if (!identifiers.is_valid_sequence(token))
+                                            errors += "Invalid identifier: " + token + " at line: " + to_string(
+                                                line_number) + "\n";
+
+                                        ts_identifiers.insert(token);
+                                        fip.push_back(make_pair(0, ts_identifiers.get_index(token)));
+                                    } else {
+                                        //it must be a constant
+                                        //if it doesn't have " before than it must be an integer or a float
+                                        if (fip[fip.size() - 1].first != key_words["\""]) {
+                                            if(!integer_constants.is_valid_sequence(token) && !float_constants.is_valid_sequence(token))
+                                                errors += "Invalid constant: " + token + " at line: " + to_string(line_number) + "\n";
+                                        }
+                                        else must_close_string = true;
+                                        ts_constants.insert(token);
+                                        fip.push_back(make_pair(1, ts_constants.get_index(token)));
+                                    }
+                                } else {
+                                    //othwerwise we throw an error
+                                    errors += "Error - couldn't solve for symbol: " + token + " at line " + to_string(
+                                        line_number) + "\n";
+                                }
+                            }
+                            else {
+                                if(ts_constants.get_index(token) != -1)
+                                    fip.push_back(make_pair(1, ts_constants.get_index(token)));
+                                else fip.push_back(make_pair(0, ts_identifiers.get_index(token)));
+                            }
                         }
                     }
 
-            }
-        }
-    }
-
-    /// end
-}
-
-
-///OLD METHOD
-void parse_code_file() {
-    for (string line: code_lines) {
-        if (!line.empty()) {
-            istringstream stream(line);
-            string atom;
-
-            while (stream >> atom) {
-                bool is_semicolon = false;
-                bool is_paranthesis = false;
-
-                if (atom[atom.size() - 1] == ',') atom.pop_back();
-                else if (atom[atom.size() - 1] == ';') {
-                    atom.pop_back();
-                    is_semicolon = true;
-                } else if (atom[atom.size() - 1] == ')' && atom.substr(0, 4) != "main" && atom.substr(0, 4) != "read" &&
-                           atom.substr(0, 5) != "write") {
-                    atom.pop_back();
-                    is_paranthesis = true;
-                } else if (atom[0] == '(') {
-                    parsed_code.push_back("(");
-                    atom.erase(0, 1);
+                    if (opened_paranthesis < 0)
+                        errors += "Unexpected paranthesis at line " + to_string(line_number) +
+                                "\n";
+                    if (opened_brace < 0) errors += "Unexpected brace at line " + to_string(line_number) + "\n";
                 }
+            }
 
-                if (!atom.empty())
-                    parsed_code.push_back(atom);
-                if (is_semicolon) parsed_code.push_back(";");
-                if (is_paranthesis) parsed_code.push_back(")");
+            if(must_close_string) {
+                errors = "Error - string wasn't closed at line " + to_string(line_number) + "\n";
+                must_close_string = false;
             }
         }
     }
-}
 
-void create_ts() {
-    for (int i = 0; i < parsed_code.size(); i++) {
-        if (parsed_code[i] == "int" || parsed_code[i] == "float" || parsed_code[i] == "string" || parsed_code[i] ==
-            "<-") {
-            if (i + 1 < parsed_code.size()) {
-                i++;
-                if (key_words.count(parsed_code[i]) == 0 && ts.get_index(parsed_code[i]) == -1)
-                    ts.insert(parsed_code[i]);
-                else errors += "Error - '" + parsed_code[i] + "' is not a valid variable/const\n";
-            } else break;
-        }
+    if(fip.size() > 0) {
+        if(fip[0].first == key_words["main"]) errors = "Error at line 0, program should start with 'main'\n" + errors;
     }
 }
-
-void create_fip() {
-    if (parsed_code[0] != "main()") errors += "Error - Program does not start with 'main()'\n";
-    if (parsed_code[1] != "{") errors += "Error - Missing '{' after 'main()'\n";
-    if (parsed_code[parsed_code.size() - 1] != "}") errors += "Error - Missing '}' at the end of the file\n";
-
-    for (int i = 0; i < parsed_code.size(); i++) {
-        if (parsed_code[i] != "{" && parsed_code[i] != "}" && parsed_code[i] != "{" && parsed_code[i] != ")") {
-            if (parsed_code[i] == "if") {
-                fip.push_back(make_pair(key_words[parsed_code[i]], -1));
-                if (parsed_code[i + 1] != "(") errors += "Error - Missing '(' after 'if'\n";
-                else i++;
-            }
-            if (parsed_code[i] == "while") {
-                fip.push_back(make_pair(key_words[parsed_code[i]], -1));
-                if (parsed_code[i + 1] != "(") errors += "Error - Missing '(' after 'while'\n";
-                else i++;
-            }
-            if (ts.get_index(parsed_code[i]) != -1) {
-                if (parsed_code[i - 1] == "<-")
-                    fip.push_back(
-                        make_pair(key_words["CONST"], ts.get_index(parsed_code[i])));
-                else fip.push_back(make_pair(key_words["ID"], ts.get_index(parsed_code[i])));
-            } else fip.push_back(make_pair(key_words[parsed_code[i]], -1));
-        }
-    }
-}
-
 
 /// MAIN
 int main() {
-    //Cod BB
+    //Reading the inputs
     try {
         read_input_lines();
         read_reserved_keywords();
+        identifiers.file_read(identifiers_filename);
+        integer_constants.file_read(integers_filename);
+        float_constants.file_read(float_filename);
+
+        if (!identifiers.is_deterministic() || !integer_constants.is_deterministic() || !float_constants.
+            is_deterministic()) {
+            cout << "Error - Program cannot start with nedeterministic AFs";
+            return 1;
+        }
     } catch (const exception &e) {
         cout << e.what();
         output_file.close();
         return 1;
     }
 
-    // parse_code_file();
-    // create_ts();
-    // create_fip();
     parse_code();
-
     output();
+
     return 0;
 }

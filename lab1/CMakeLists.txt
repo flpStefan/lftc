@@ -16,4 +16,5 @@ add_executable(lftc
         main.cpp
         bst/BST.h
         bst/BST.cpp
+        AF/AutomatFinit.cpp
 )
